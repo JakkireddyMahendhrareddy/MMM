@@ -8,6 +8,7 @@
     "server": "nodemon index.js"
   },
   "dependencies": {
+    "@heroicons/react": "^2.2.0",
     "bcrypt": "^5.1.1",
     "bcryptjs": "^3.0.2",
     "colors": "^1.4.0",

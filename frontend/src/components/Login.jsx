@@ -1,43 +1,66 @@
 import { useNavigate, Link } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import axios from "axios";
+import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/solid";
 
 const Login = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState(""); // For handling errors
-  const [loading, setLoading] = useState(false); // For loading state
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+
+  // Check if user is already authenticated on component mount
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      // Token exists, redirect to home page
+      navigate("/");
+    }
+  }, []); // Remove navigate from dependencies to prevent infinite loops
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true); // Set loading state to true while the request is in progress
-    setError(""); // Clear any previous errors
+    setLoading(true);
+    setError("");
+
+    if (!email || !password) {
+      setError("Please enter all details.");
+      setLoading(false);
+      return;
+    }
 
     try {
-      // Make the POST request to login the user
-      const response = await axios.post("http://localhost:5001/api/login", {
+      const response = await axios.post("http://localhost:5001/api/auth/login", {
         email,
         password,
       });
+      console.log(response, "----------++++++++++");
 
       if (response.data.success) {
-        // If login is successful, store the token in local storage (or context)
+        // Save token and username from the response
         localStorage.setItem("token", response.data.token);
+        localStorage.setItem("username", response.data.user.name);
 
-        // Optionally, you can also save user info in context if needed
-        // const { name, email } = response.data.user;
-
-        // Navigate to the home page
+        // Navigate to the homepage
         navigate("/");
       } else {
-        setError(response.data.message || "Login failed"); // Display error message
+        setError(response.data.message || "Invalid email or password");
       }
     } catch (error) {
       console.error("Login error:", error);
-      setError("Server error, please try again later.");
+      if (
+        error.response &&
+        error.response.data &&
+        error.response.data.message
+      ) {
+        setError(error.response.data.message);
+      } else {
+        setError("Server error, please try again later.");
+      }
     } finally {
-      setLoading(false); // Set loading state to false after the request completes
+      setLoading(false);
     }
   };
 
@@ -51,7 +74,7 @@ const Login = () => {
           Login
         </h2>
         {error && (
-          <div className="text-red-600 text-sm text-center mb-4">{error}</div>
+          <div className="text-red-600 text-sm text-center mb-2">{error}</div>
         )}
         <input
           className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-indigo-400"
@@ -61,23 +84,35 @@ const Login = () => {
           onChange={(e) => setEmail(e.target.value)}
           required
         />
-        <input
-          className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-indigo-400"
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
+        <div className="relative">
+          <input
+            className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-indigo-400"
+            type={showPassword ? "text" : "password"}
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+          <div
+            className="absolute right-3 top-2.5 cursor-pointer text-gray-500"
+            onClick={() => setShowPassword(!showPassword)}
+          >
+            {showPassword ? (
+              <EyeSlashIcon className="h-5 w-5" />
+            ) : (
+              <EyeIcon className="h-5 w-5" />
+            )}
+          </div>
+        </div>
         <button
           type="submit"
           className="w-full py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
-          disabled={loading} // Disable the button while loading
+          disabled={loading}
         >
           {loading ? "Logging in..." : "Login"}
         </button>
         <p className="text-sm text-center text-gray-600">
-          Don’t have an account?{" "}
+          Don't have an account?{" "}
           <Link to="/register" className="text-indigo-600 hover:underline">
             Register
           </Link>

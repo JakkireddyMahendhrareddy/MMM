@@ -1,52 +1,56 @@
 // ----- Main Entry Point (index.js) -----
+
 const express = require("express");
 const dotenv = require("dotenv");
 const colors = require("colors");
 const morgan = require("morgan");
-const cors = require("cors"); // Importing cors
+const cors = require("cors");
 const connectDB = require("./config/db");
 
 // Load environment variables
 dotenv.config({ path: "./.env" });
 
+// Connect to MongoDB
+connectDB();
+
 // Initialize express app
 const app = express();
 
-// Enable CORS (only once)
-app.use(cors()); // Apply CORS middleware
+// Middlewares
+app.use(cors()); // Enable CORS
+app.use(express.json()); // Parse JSON bodies
 
-// Connect to database
-connectDB();
-
-// Body parser middleware
-app.use(express.json());
-
-// Dev logging middleware
+// Logging only in development
 if (process.env.NODE_ENV === "development") {
   app.use(morgan("dev"));
 }
 
-// Routes
-app.use("/api/transactions", require("./routes/transactionRoutes"));
-app.use("/api", require("./routes/authRoutes")); // Mount auth routes
+// API Routes
+app.use('/api/auth', require('./routes/authRoutes'));
+app.use('/api/transactions', require('./routes/transactionRoutes'));
+
 
 // Home route
 app.get("/", (req, res) => {
-  res.send("Money Manager API is running...");
+  res.send("💰 Money Manager API is running...");
 });
 
-// Error handling middleware
+// 404 Handler for unknown routes
+app.use((req, res, next) => {
+  res.status(404).json({ message: "Route not found" });
+});
+
+// Global Error Handler
 app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).send("Something broke!");
+  console.error(err.stack.red);
+  res.status(500).json({ message: "Internal Server Error" });
 });
-
-// Set port
-const PORT = process.env.PORT || 5001;
 
 // Start server
+const PORT = process.env.PORT || 5001;
+
 app.listen(PORT, () => {
   console.log(
-    `Server running in ${process.env.NODE_ENV} mode on port ${PORT}`.yellow.bold
+    `🚀 Server running in ${process.env.NODE_ENV} mode on port ${PORT}`.yellow.bold
   );
 });
